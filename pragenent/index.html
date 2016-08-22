@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+		<title></title>
+		<script src="js/mui.min.js"></script>
+		<link href="css/mui.min.css" rel="stylesheet" />
+		<script type="text/javascript" charset="utf-8">
+			mui.init();
+		</script>
+
+	</head>
+
+	<style>
+		html,
+		body {
+			height: 100%;
+			margin: 0;
+			padding: 0;
+		}
+		
+		#map {
+			height: 80%;
+		}
+	</style>
+
+	<body>
+		<header class="mui-bar mui-bar-nav">
+			<h1 class="mui-title">歡迎查詢</h1>
+			<a id="info" class="mui-icon mui-icon-navigate mui-pull-right" style="color: #999;"></a>
+		</header>
+		<div class="mui-content">
+			<div class="mui-row" style="margin-top: 15px;">
+				<div class="mui-segmented-control">
+					<a class="item mui-control-item mui-active" href="#item1" id="feeding">哺乳室</a>
+					<a class="item mui-control-item" href="#item2" id="watermachine">飲水機</a>
+					<a class="item mui-control-item" href="#item3" id="toilet">親子廁所</a>
+				</div>
+			</div>
+			<hr>
+		</div>
+		<div id="map">
+
+		</div>
+		<nav class="mui-bar mui-bar-tab">
+			<div align="center">
+				<a href="http://www.dosw.gov.taipei/" style="font-size:10px;">台北市政府社會局</a>
+			</div>
+			<div align="center" style="font-size:10px;">Copyrigh © 2016 Taipei HackNTU by MIX</div>
+		</nav>
+
+		<script type="text/javascript" src="js/index.js"></script>
+		<script>
+			var map = null;
+			document.getElementById("info").addEventListener('tap', function() {
+				initMap();
+			});
+			mui('.mui-segmented-control').on('tap', 'a', function() {
+				initMap();
+				mui(this).className = 'item mui-control-item mui-active';
+				var id = this.id;
+				switch(id) {
+					case 'feeding':
+						loadData("http://x.rce.tw/s/pd920319/php/" + id + ".php", feeding, "");
+						break;
+					case 'watermachine':
+						loadData("http://x.rce.tw/s/pd920319/php/" + id + ".php", watermachine, "");
+						break;
+					case 'toilet':
+						loadData("http://x.rce.tw/s/pd920319/php/" + id + ".php", toilet, "");
+						break;
+				}
+
+			})
+
+			function feeding(xhttp) {
+				var index = 1;
+				var str = JSON.parse(xhttp.responseText);
+				var text = [];
+				var content = [];
+				var image = {
+					url: 'images/bottle.png',
+					origin: new google.maps.Point(0, 0)
+				};
+ 
+				for(let i = 0; i < str.feeding.length; i++) {
+					text.push({
+						lat: parseFloat(str.feeding[i].Longitude),
+						lng: parseFloat(str.feeding[i].Latitude)
+					});
+					var temp = str.feeding[i].AdvTag.split("$$");
+					content.push({
+						BreName: str.feeding[i].BreName,
+						Address: str.feeding[i].Address,
+						Tel: str.feeding[i].Tel,
+						OpenTime: str.feeding[i].OpenTime,
+						AdvTag: temp,
+						Remind: str.feeding[i].Remind
+					});
+				}
+				myMarker(map, text, content, image, index);
+			}
+
+			function watermachine(xhttp) {
+				//				console.log(xhttp.responseText);
+				var index = 2;
+				var str = JSON.parse(xhttp.responseText);
+				var text = [];
+				var content = [];
+				var image = {
+					url: 'images/drink.png',
+					origin: new google.maps.Point(0, 0)
+				};
+				console.log(parseFloat(str.water[1].Latitude) + "   " + parseFloat(str.water[1].Longitude));
+				for(let i = 0; i < str.water.length; i++) {
+					text.push({
+						lat: parseFloat(str.water[i].Latitude),
+						lng: parseFloat(str.water[i].Longitude)
+					});
+					content.push({
+						Place: str.water[i].Place,
+						Location: str.water[i].Location,
+						Tel: str.water[i].Tel,
+						MachineNum: str.water[i].MachineNum,
+						OpenTime: str.water[i].OpenTime
+					});
+				}
+				myMarker(map, text, content, image, index);
+			}
+
+			function toilet(xhttp) {
+//								console.log(xhttp.responseText);
+				var index = 3;
+				var str = JSON.parse(xhttp.responseText);
+				var text = [];
+				var content = [];
+				var image = {
+					url: 'images/Toilet.png',
+					origin: new google.maps.Point(0, 0)
+				};
+				console.log(parseFloat(str.toilet[1].Latitude) + "   " + parseFloat(str.toilet[1].Longitude));
+				for(let i = 0; i < str.toilet.length; i++) {
+					text.push({
+						lat: parseFloat(str.toilet[i].Longitude),
+						lng: parseFloat(str.toilet[i].Latitude)
+					});
+					content.push({
+						Department: str.toilet[i].Department,
+						Location: str.toilet[i].Location,
+						ToiletsNum: str.toilet[i].ToiletsNum,
+						Disabled: str.toilet[i].Disabled,
+						ParentalToilet: str.toilet[i].ParentalToilet,
+					});
+					
+
+				}
+				myMarker(map, text, content, image, index);
+			}
+
+			function myMarker(map, positionArray, content, image, index) { //mark所有座標
+				//              console.log(image);
+				for(let i = 0; i < positionArray.length; i++) {
+					//					console.log(positionArray[i].lat+"   "+positionArray[i].lng);
+					var marker = new google.maps.Marker({
+						position: positionArray[i],
+						map: map,
+						icon: image
+					});
+					//		
+					if(index == 1) {
+						var contentString = '<div id="content">' +
+							'<div id="siteNotice"></div>' +
+							'<h4 id="firstHeading" class="firstHeading">' + content[i].BreName + '</h4>' +
+							'<div id="bodyContent">' +
+							'<div><b>地址:' + content[i].Address + '</b></div>' +
+							'<div>電話:' + content[i].Tel + '</div>' +
+							'<div>開放時間:' + content[i].OpenTime + '</div>' +
+							'<div>進階設備:' + content[i].AdvTag + '</div>' +
+							'<div><sup>*</sup>備註:' + content[i].Remind + '</div>' +
+							'</div>' +
+							'</div>';
+						attachSecretMessage(marker, contentString);
+					}
+					if(index == 2) {
+						var contentString = '<div id="content">' +
+							'<div id="siteNotice"></div>' +
+							'<h4 id="firstHeading" class="firstHeading">' + content[i].Place + '</h4>' +
+							'<div id="bodyContent">' +
+							'<div><b>地址： ' + content[i].Location + '</b></div>' +
+							'<div>電話：' + content[i].Tel + ' </div>' +
+							'<div>數量： ' + content[i].MachineNum + '</div>' +
+							'<div>開放時間：' + content[i].OpenTime + ' </div>' +
+							'</div>' +
+							'</div>';
+						attachSecretMessage(marker, contentString);
+					}
+					if(index == 3) {
+						var str="採用親子和殘障廁所";
+						if(content[i].ParentalToilet=="v" && content[i].Disabled!="v"){
+							str="採用親子廁所";
+						}else if(content[i].ParentalToilet!="v" && content[i].Disabled=="v"){
+							str="採用殘障廁所";
+						}
+							var contentString = '<div id="content">' +
+								'<div id="siteNotice"></div>' +
+								'<h4 id="firstHeading" class="firstHeading">' + content[i].Department + '</h4>' +
+								'<div id="bodyContent">' +
+								'<div>'+str+'</div>' + 
+								'<div><b>地址： ' + content[i].Location + ' </b></div>' +
+								'<div>數量： ' + content[i].ToiletsNum +' </div>' +
+								'</div>' +
+								'</div>';
+						attachSecretMessage(marker, contentString);
+					}
+					//					var infowindow = new google.maps.InfoWindow({
+					//						content: contentString
+					//					});
+				}
+			}
+
+			function attachSecretMessage(marker, content) {
+				var infowindow = new google.maps.InfoWindow({
+					content: content,
+					size: new google.maps.Size(200, 200)
+				});
+				google.maps.event.addListener(marker, 'click', function() {
+					infowindow.open(marker.get('map'), marker);
+				});
+			}
+
+			function loadData(url, cfunc, data) {
+				var xhttp = new XMLHttpRequest();
+				xhttp.onreadystatechange = function() {
+					if(xhttp.readyState == 4 && xhttp.status == 200) {
+						cfunc(xhttp);
+					}
+				};
+				xhttp.open("POST", url, true);
+				xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+				xhttp.send(data);
+
+			}
+
+			function initMap() {
+				if(navigator.geolocation) {
+					navigator.geolocation.getCurrentPosition(function(position) {
+						console.log(position.coords.latitude);
+						var pos = {
+							lat: position.coords.latitude,
+							lng: position.coords.longitude
+						};
+
+						map = new google.maps.Map(document.getElementById('map'), {
+							center: pos,
+							zoom: 16
+							
+						});
+						var marker = new google.maps.Marker({
+							position: pos,
+							map: map,
+							title: 'Hello World!'
+						});
+						var infoWindow = new google.maps.InfoWindow({
+							map: map
+						});
+						infoWindow.setPosition(pos);
+						infoWindow.setContent('我現在在這裡!!');
+						map.setCenter(pos);
+
+					});
+				}
+				loadData("http://x.rce.tw/s/pd920319/php/feeding.php", feeding, "");
+			}
+
+			function padLeft(str, lenght) { //補0函數
+				if(str.length >= lenght)
+					return str;
+				else
+					return padLeft("0" + str, lenght);
+			}
+		</script>
+		<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDGQlYZtWQWsWkeKwOYaUdO_nhqMf7Xwro&signed_in=true&callback=initMap" async defer></script>
+	</body>
+
+</html>
